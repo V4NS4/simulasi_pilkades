@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoteNow - Simulasi Pilkades</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Library HTML5 QR / Barcode Scanner -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #f0f4f9; color: #333; padding: 16px; }
+        
+        /* Container Dashboard Utama */
+        .container { max-width: 1000px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); }
+
+        /* HEADER & SCREEN LOGIN / PIN STYLES */
+        .auth-screen-container {
+            max-width: 440px; margin: 40px auto; background: #ffffff;
+            border-radius: 20px; padding: 32px 24px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0; text-align: left;
+        }
+        .auth-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #007aff; font-size: 16px; margin-bottom: 24px; }
+        .auth-title { font-size: 22px; font-weight: 800; color: #1e293b; line-height: 1.3; margin-bottom: 24px; }
+        
+        .auth-form-group { margin-bottom: 18px; }
+        .auth-form-group label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+        .auth-input {
+            width: 100%; padding: 12px 16px; background: #f0f7ff; border: 1px solid #d0e1fd;
+            border-radius: 10px; font-size: 14px; color: #1e293b; font-weight: 600; outline: none; transition: all 0.2s;
+        }
+        .auth-input:focus { border-color: #007aff; background: #ffffff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
+
+        .btn-auth-primary {
+            width: 100%; background: #007aff; color: white; border: none; padding: 14px;
+            border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer;
+            margin-top: 10px; transition: background 0.2s; text-align: center;
+        }
+        .btn-auth-primary:hover { background: #0062cc; }
+
+        /* PIN INPUT STYLES (6 DIGIT BOXES) */
+        .pin-input-grid { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+        .pin-box {
+            width: 44px; height: 50px; border-radius: 10px; border: 1px solid #cbd5e1;
+            text-align: center; font-size: 20px; font-weight: bold; color: #1e293b;
+            background: #f8fafc; outline: none; transition: all 0.2s;
+        }
+        .pin-box:focus { border-color: #007aff; background: #ffffff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
+
+        /* Header Section Dashboard */
+        .header-banner {
+            background: #e8f1fd; border-radius: 12px; padding: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; border: 1px solid #d0e1fd; gap: 12px;
+        }
+        .header-title-section h1 { font-size: 18px; color: #1a1a1a; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .verified-icon { color: #1d9bf0; font-size: 16px; }
+        .location-info p, .meta-info p { font-size: 12px; color: #555; line-height: 1.4; }
+
+        .section-title { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 12px; margin-top: 20px; }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+
+        .menu-card {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.2s ease; cursor: pointer;
+        }
+        .menu-card:hover { border-color: #2563eb; background: #f0f7ff; }
+        .card-left { display: flex; align-items: center; gap: 14px; width: 100%; }
+        .icon-box {
+            width: 44px; height: 44px; border-radius: 10px; background: #e0f2fe; color: #0284c7;
+            display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+        }
+        .card-content h3 { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+        .card-content p { font-size: 11px; color: #64748b; }
+
+        .btn-action {
+            background: #2563eb; color: white; border: none; padding: 8px 14px;
+            border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+        }
+        .btn-action:hover { background: #1d4ed8; }
+        .status-tag { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; margin-top: 4px; display: inline-block; }
+        .status-ready { background: #dcfce7; color: #15803d; }
+        .status-empty { background: #fee2e2; color: #b91c1c; }
+
+        /* Modal Popup */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative; }
+        .close-btn { float: right; cursor: pointer; font-size: 22px; font-weight: bold; color: #666; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px; text-align: left; }
+        th { background: #f1f5f9; }
+
+        /* Form Inputs */
+        .form-group { margin-bottom: 12px; }
+        .form-group label { font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+
+        /* DAFTAR KANDIDAT & PEMILIH STYLES */
+        .candidate-list-item {
+            display: flex; align-items: center; gap: 16px; background: #f8fafc;
+            border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px;
+        }
+        .candidate-thumb {
+            width: 50px; height: 65px; border-radius: 6px; overflow: hidden;
+            border: 2px solid #f59e0b; background: #ffffff; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .candidate-thumb svg { width: 100%; height: 100%; object-fit: contain; }
+        .candidate-info-text .no-urut-label { font-size: 11px; font-weight: 700; color: #2563eb; }
+        .candidate-info-text .nama-label { font-size: 14px; font-weight: 700; color: #1e293b; margin-top: 2px; }
+
+        .voter-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .voter-nik { font-size: 11px; font-weight: bold; color: #2563eb; }
+        .voter-nama { font-size: 13px; font-weight: 800; color: #1e293b; margin: 2px 0; }
+        .voter-meta { font-size: 10px; color: #64748b; }
+
+        /* STYLES: KANDIDAT BERDAMPINGAN BILIK SUARA */
+        .candidate-side-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
+        .candidate-card-box { border: 2px solid #cbd5e1; border-radius: 16px; padding: 14px; text-align: center; background: #f8fafc; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; }
+        .candidate-card-box:hover { border-color: #2563eb; background: #f0f7ff; }
+        .number-badge-large { background: #2563eb; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+        .candidate-photo-wrapper { width: 130px; height: 160px; border-radius: 6px; border: 3px solid #f59e0b; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; background: #fff; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        .candidate-photo-wrapper svg { width: 100%; height: 100%; object-fit: contain; }
+
+        .scanner-container { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 2px dashed #2563eb; background: #000; min-height: 220px; }
+
+        /* STYLES: KELOLA PRINTER INTERFACE */
+        .printer-tab-container { display: flex; background: #e2e8f0; border-radius: 10px; padding: 3px; margin-bottom: 15px; }
+        .printer-tab-btn { flex: 1; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: #475569; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .printer-tab-btn.active { background: #2563eb; color: white; }
+        
+        .printer-status-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .status-box { flex: 1; min-width: 120px; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 600; text-align: center; }
+        .status-box-blue { background: #bae6fd; color: #0369a1; }
+        .status-box-gray { background: #e2e8f0; color: #475569; }
+        .status-box-green { background: #dcfce7; color: #15803d; }
+
+        .printer-actions-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn-scan-printer { flex: 1; min-width: 120px; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-test-printer { flex: 1; min-width: 120px; background: #cbd5e1; color: #64748b; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-test-printer.ready { background: #16a34a; color: white; }
+
+        .printer-device-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; }
+        .printer-device-card:hover { border-color: #2563eb; background: #f0f7ff; }
+
+        /* STYLES: DATA PEMILIH INTERFACE */
+        .auth-method-box { background: #e8f1fd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .radio-option { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b; }
+        .radio-option:last-child { margin-bottom: 0; }
+        .radio-option input[type="radio"] { width: 16px; height: 16px; accent-color: #007aff; cursor: pointer; }
+
+        .backup-tips-box { background: #fce8e6; border-radius: 12px; padding: 14px; margin-top: 15px; margin-bottom: 20px; color: #c5221f; font-size: 12px; line-height: 1.6; }
+        .backup-tips-title { font-weight: bold; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+        .export-location-box { background: #e8f1fd; border-radius: 12px; padding: 16px; margin-top: 10px; }
+        .export-location-title { font-size: 13px; font-weight: bold; color: #1e293b; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .export-location-sub { font-size: 11px; font-style: italic; color: #5f6368; margin-bottom: 14px; }
+        
+        .btn-pilih-lokasi-export {
+            width: 100%; background: #007aff; color: white; border: none; padding: 12px;
+            border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn-pilih-lokasi-export:hover { background: #0062cc; }
+
+        .restore-box { background: #e8f1fd; border-radius: 12px; padding: 14px; margin-top: 16px; font-size: 13px; font-weight: bold; color: #1e293b; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+
+        /* RESPONSIF KHUSUS HP */
+        @media (max-width: 576px) {
+            body { padding: 8px; }
+            .container { padding: 12px; border-radius: 12px; }
+            .header-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .meta-info { width: 100%; border-top: 1px solid #d0e1fd; padding-top: 8px; display: flex; justify-content: space-between; }
+            .card-grid { grid-template-columns: 1fr; }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #dataModal, #dataModal * { visibility: visible; }
+            #dataModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white; padding: 0; }
+            .modal-content { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
+            .close-btn, .no-print { display: none !important; }
+            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+            .signature-section { margin-top: 30px; display: flex; justify-content: space-between; text-align: center; font-size: 11px; }
+            .signature-box { width: 30%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. HALAMAN LOGIN UTAMA (MANUAL FILLING) -->
+    <div id="loginScreen" class="auth-screen-container">
+        <div class="auth-brand">
+            <i class="fa-solid fa-circle-check"></i> VoteNow <span style="font-size: 11px; color: #64748b; font-weight: normal;">v2.1</span>
+        </div>
+        <h2 class="auth-title">Selamat Datang,<br>di Aplikasi Bilik Digital</h2>
+
+        <div class="auth-form-group">
+            <label>Username</label>
+            <input type="text" id="loginUsername" class="auth-input" placeholder="Masukkan Username">
+        </div>
+
+        <div class="auth-form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Masukkan Password">
+        </div>
+
+        <button id="btnLoginSubmit" class="btn-auth-primary" onclick="handleLoginSubmit()">Login Petugas</button>
+    </div>
+
+    <!-- 2. HALAMAN SET/BUAT PIN KPPS -->
+    <div id="setupPinScreen" class="auth-screen-container" style="display: none; text-align: center;">
+        <div class="auth-brand" style="justify-content: center;">
+            <i class="fa-solid fa-circle-check"></i> VoteNow <span style="font-size: 11px; color: #64748b; font-weight: normal;">v2.1</span>
+        </div>
+        <h2 id="pinScreenTitle" class="auth-title" style="font-size: 18px; margin-bottom: 12px;">Buat PIN Petugas KPPS</h2>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 20px;">Masukkan 6 digit angka untuk mengamankan akses menu aplikasi</p>
+
+        <div class="pin-input-grid">
+            <input type="password" class="pin-box" maxlength="1" onkeyup="movePinFocus(this, 1)">
+            <input type="password" class="pin-box" maxlength="1" onkeyup="movePinFocus(this, 2)">
+            <input type="password" class="pin-box" maxlength="1" onkeyup="movePinFocus(this, 3)">
+            <input type="password" class="pin-box" maxlength="1" onkeyup="movePinFocus(this, 4)">
+            <input type="password" class="pin-box" maxlength="1" onkeyup="movePinFocus(this, 5)">
+            <input type="password" class="pin-box" maxlength="1" onkeyup="movePinFocus(this, 6)">
+        </div>
+
+        <button class="btn-auth-primary" onclick="handleSavePin()">Simpan PIN</button>
+    </div>
+
+    <!-- 3. DASHBOARD UTAMA -->
+    <div id="mainDashboard" class="container" style="display: none;">
+        
+        <!-- Header Section -->
+        <div class="header-banner">
+            <div class="header-title-section">
+                <h1>
+                    <i class="fa-solid fa-circle-check verified-icon"></i> 
+                    VoteNow <span style="font-size: 12px; color: #666; font-weight: normal;">v2.1</span>
+                </h1>
+                <div class="location-info">
+                    <p>Kecamatan: <strong id="lbl-kecamatan">Ujungjaya</strong></p>
+                    <p>Desa: <strong id="lbl-desa">Ujungjaya</strong></p>
+                </div>
+            </div>
+            
+            <div class="meta-info">
+                <p>TPS No: <strong id="lbl-tps">5</strong></p>
+                <p>Bilik No: <strong id="lbl-bilik">1</strong></p>
+                <p>Device ID: <strong id="lbl-device">ba77ed0749c1b4b5</strong></p>
+            </div>
+        </div>
+
+        <!-- Section 1: Informasi Pemilihan -->
+        <div class="section-title">Informasi Pemilihan</div>
+        <div class="card-grid">
+            <div class="menu-card" onclick="requestPinVerification(() => viewData('kandidat'))">
+                <div class="card-left">
+                    <div class="icon-box"><i class="fa-solid fa-user-tie"></i></div>
+                    <div class="card-content">
+                        <h3>Data Kandidat</h3>
+                        <p>Profil dan daftar kandidat</p>
+                        <span id="status-kandidat" class="status-tag status-empty">Belum Diunduh</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-card" onclick="requestPinVerification(() => viewData('pemilih'))">
+                <div class="card-left">
+                    <div class="icon-box" style="background: #fef3c7; color: #d97706;"><i class="fa-solid fa-users"></i></div>
+                    <div class="card-content">
+                        <h3>Data Pemilih</h3>
+                        <p>Daftar pemilih tetap (DPT)</p>
+                        <span id="status-pemilih" class="status-tag status-empty">Belum Diunduh</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Proses Pemungutan Suara -->
+        <div class="section-title">Proses Pemungutan Suara</div>
+        <div class="card-grid">
+            <div class="menu-card" onclick="requestPinVerification(() => openVotingBilik())">
+                <div class="card-left">
+                    <div class="icon-box" style="background: #dcfce7; color: #16a34a;"><i class="fa-solid fa-box-archive"></i></div>
+                    <div class="card-content">
+                        <h3>Pemilihan</h3>
+                        <p>Scan barcode untuk masuk bilik suara</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-card" onclick="requestPinVerification(() => openRekapData())">
+                <div class="card-left">
+                    <div class="icon-box" style="background: #f3e8ff; color: #9333ea;"><i class="fa-solid fa-clipboard-list"></i></div>
+                    <div class="card-content">
+                        <h3>Rekap Data</h3>
+                        <p>Lihat & Print Hasil Penghitungan Suara</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-card" onclick="requestPinVerification(() => openCetakUlang())">
+                <div class="card-left">
+                    <div class="icon-box" style="background: #e0e7ff; color: #4f46e5;"><i class="fa-solid fa-print"></i></div>
+                    <div class="card-content">
+                        <h3>Cetak Ulang</h3>
+                        <p>Mencetak ulang resi suara</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Pengaturan Sistem -->
+        <div class="section-title">Pengaturan Sistem</div>
+        <div class="card-grid">
+            <div class="menu-card" onclick="requestPinVerification(() => openKelolaPrinter())">
+                <div class="card-left">
+                    <div class="icon-box" style="background: #fee2e2; color: #dc2626;"><i class="fa-solid fa-print"></i></div>
+                    <div class="card-content">
+                        <h3>Kelola Printer</h3>
+                        <p>Kelola koneksi & Test Print</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-card" onclick="requestPinVerification(() => openSettings())">
+                <div class="card-left">
+                    <div class="icon-box" style="background: #f1f5f9; color: #475569;"><i class="fa-solid fa-gear"></i></div>
+                    <div class="card-content">
+                        <h3>Setting</h3>
+                        <p>Konfigurasi aplikasi dan sistem</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Popup Data & PIN Verification -->
+    <div id="dataModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn no-print" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle" style="text-align: center; margin-bottom: 10px; font-size: 16px;">Data</h3>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let html5QrCode = null;
+        let activeBarcode = "Barcode Test";
+        let isPrinterConnected = false;
+        let isKandidatDownloaded = false;
+        let isPemilihSaved = false;
+        let backupFileName = "";
+        let isRestored = false; 
+
+        let savedPinCode = localStorage.getItem("kpps_pin_code") || "";
+        let pendingMenuAction = null;
+
+        // SVG Ilustrasi Kandidat
+        const kandidatSVG = {
+            1: `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+                <rect width="200" height="260" fill="#007a2a"/>
+                <text x="100" y="50" font-family="'Inter', sans-serif" font-size="36" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+                <path d="M 60 70 Q 100 50 140 70 C 150 100 145 115 135 115 C 130 95 125 75 100 75 C 75 75 70 95 65 115 C 55 115 50 100 60 70 Z" fill="#2b2b2b"/>
+                <path d="M 70 95 Q 100 120 130 95 L 130 130 Q 100 160 70 130 Z" fill="#f8c193"/>
+                <ellipse cx="65" cy="115" rx="6" ry="10" fill="#f8c193"/>
+                <ellipse cx="135" cy="115" rx="6" ry="10" fill="#f8c193"/>
+                <path d="M 90 128 Q 100 123 110 128 Q 100 132 90 128" fill="#333"/>
+                <path d="M 80 145 L 120 145 L 120 180 L 100 200 L 80 180 Z" fill="#ffffff"/>
+                <polygon points="95,150 105,150 103,205 97,205" fill="#007a2a"/>
+                <path d="M 30 260 C 30 180 75 160 80 155 L 95 180 L 100 200 L 105 180 L 120 155 C 125 160 170 180 170 260 Z" fill="#1e1e1e"/>
+            </svg>`,
+            2: `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+                <rect width="200" height="260" fill="#003d73"/>
+                <text x="100" y="50" font-family="'Inter', sans-serif" font-size="36" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+                <path d="M 65 65 L 135 65 C 140 95 138 95 135 95 L 65 95 C 62 95 60 95 65 65 Z" fill="#111111"/>
+                <path d="M 60 85 C 55 105 60 115 65 115 Q 60 95 70 95 Q 100 80 130 95 Q 140 95 135 115 C 140 115 145 105 140 85 Z" fill="#4a2e18"/>
+                <path d="M 70 95 Q 100 120 130 95 L 130 130 Q 100 160 70 130 Z" fill="#f8c193"/>
+                <ellipse cx="65" cy="115" rx="6" ry="10" fill="#f8c193"/>
+                <ellipse cx="135" cy="115" rx="6" ry="10" fill="#f8c193"/>
+                <path d="M 88 128 Q 100 120 112 128 Q 100 133 88 128" fill="#222"/>
+                <path d="M 80 145 L 120 145 L 120 180 L 100 200 L 80 180 Z" fill="#ffffff"/>
+                <polygon points="95,150 105,150 103,205 97,205" fill="#003d73"/>
+                <path d="M 30 260 C 30 180 75 160 80 155 L 95 180 L 100 200 L 105 180 L 120 155 C 125 160 170 180 170 260 Z" fill="#1e1e1e"/>
+            </svg>`
+        };
+
+        window.onload = function() {
+            loadSystemSettings();
+            updateStatusUI();
+        };
+
+        // --- ALUR LOGIN FORMALITAS (MANUAL FILLING) ---
+        function handleLoginSubmit() {
+            const u = document.getElementById("loginUsername").value.trim();
+            const p = document.getElementById("loginPassword").value.trim();
+
+            if (u !== "" && p !== "") {
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("setupPinScreen").style.display = "block";
+            } else {
+                alert("Harap isi Username dan Password untuk formalitas login!");
+            }
+        }
+
+        function movePinFocus(currentInput, index) {
+            if (currentInput.value.length >= 1 && index < 6) {
+                const boxes = document.querySelectorAll("#setupPinScreen .pin-box");
+                if (boxes[index]) boxes[index].focus();
+            }
+        }
+
+        function handleSavePin() {
+            const boxes = document.querySelectorAll("#setupPinScreen .pin-box");
+            let pinVal = "";
+            boxes.forEach(b => pinVal += b.value);
+
+            if (pinVal.length === 6) {
+                savedPinCode = pinVal;
+                localStorage.setItem("kpps_pin_code", savedPinCode);
+                alert("PIN Petugas KPPS berhasil disimpan!");
+                document.getElementById("setupPinScreen").style.display = "none";
+                document.getElementById("mainDashboard").style.display = "block";
+            } else {
+                alert("Harap masukkan 6 digit PIN secara lengkap!");
+            }
+        }
+
+        // --- VERIFIKASI PIN SETIAP MENGEKLIK MENU ---
+        function requestPinVerification(actionCallback) {
+            pendingMenuAction = actionCallback;
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+            const body = document.getElementById("modalBody");
+
+            title.innerText = "Verifikasi PIN Petugas";
+            body.innerHTML = `
+                <div style="text-align:center; padding: 10px;">
+                    <p style="font-size:12px; color:#64748b; margin-bottom:15px;">Masukkan PIN 6 Digit untuk membuka menu ini</p>
+                    <div class="pin-input-grid">
+                        <input type="password" class="pin-box modal-pin" maxlength="1" onkeyup="moveModalPinFocus(this, 1)">
+                        <input type="password" class="pin-box modal-pin" maxlength="1" onkeyup="moveModalPinFocus(this, 2)">
+                        <input type="password" class="pin-box modal-pin" maxlength="1" onkeyup="moveModalPinFocus(this, 3)">
+                        <input type="password" class="pin-box modal-pin" maxlength="1" onkeyup="moveModalPinFocus(this, 4)">
+                        <input type="password" class="pin-box modal-pin" maxlength="1" onkeyup="moveModalPinFocus(this, 5)">
+                        <input type="password" class="pin-box modal-pin" maxlength="1" onkeyup="moveModalPinFocus(this, 6)">
+                    </div>
+                    <button class="btn-action" style="width:100%; justify-content:center; padding:12px; background:#007aff; margin-top:10px;" onclick="verifyPinAndExecute()">Konfirmasi PIN</button>
+                </div>
+            `;
+            modal.style.display = "flex";
+            setTimeout(() => {
+                const firstPin = document.querySelector(".modal-pin");
+                if (firstPin) firstPin.focus();
+            }, 200);
+        }
+
+        function moveModalPinFocus(currentInput, index) {
+            if (currentInput.value.length >= 1 && index < 6) {
+                const boxes = document.querySelectorAll(".modal-pin");
+                if (boxes[index]) boxes[index].focus();
+            }
+        }
+
+        function verifyPinAndExecute() {
+            const boxes = document.querySelectorAll(".modal-pin");
+            let enteredPin = "";
+            boxes.forEach(b => enteredPin += b.value);
+
+            if (enteredPin === savedPinCode) {
+                if (pendingMenuAction) {
+                    const actionToRun = pendingMenuAction;
+                    pendingMenuAction = null;
+                    actionToRun();
+                }
+            } else {
+                alert("PIN yang Anda masukkan salah!");
+            }
+        }
+
+        function loadSystemSettings() {
+            const config = JSON.parse(localStorage.getItem("system_config") || '{"kecamatan":"Ujungjaya","desa":"Ujungjaya","tps":"5","bilik":"1","device":"ba77ed0749c1b4b5"}');
+            if (config.kecamatan) document.getElementById("lbl-kecamatan").innerText = config.kecamatan;
+            if (config.desa) document.getElementById("lbl-desa").innerText = config.desa;
+            if (config.tps) document.getElementById("lbl-tps").innerText = config.tps;
+            if (config.bilik) document.getElementById("lbl-bilik").innerText = config.bilik;
+            if (config.device) document.getElementById("lbl-device").innerText = config.device;
+        }
+
+        function saveSettings() {
+            const newConfig = {
+                kecamatan: document.getElementById("cfg-kecamatan").value,
+                desa: document.getElementById("cfg-desa").value,
+                tps: document.getElementById("cfg-tps").value,
+                bilik: document.getElementById("cfg-bilik").value,
+                device: document.getElementById("cfg-device").value
+            };
+            localStorage.setItem("system_config", JSON.stringify(newConfig));
+            loadSystemSettings();
+            alert("Pengaturan berhasil disimpan!");
+            closeModal();
+        }
+
+        // --- MENU KELOLA PRINTER ---
+        function openKelolaPrinter() {
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+
+            title.innerText = "Kelola Koneksi Printer";
+            renderPrinterUI();
+            modal.style.display = "flex";
+        }
+
+        function renderPrinterUI() {
+            const body = document.getElementById("modalBody");
+            const statusText = isPrinterConnected ? "Printer Terhubung" : "Printer Tidak Terhubung";
+            const statusClass = isPrinterConnected ? "status-box-green" : "status-box-gray";
+            const testBtnClass = isPrinterConnected ? "btn-test-printer ready" : "btn-test-printer";
+
+            body.innerHTML = `
+                <div class="printer-tab-container">
+                    <button class="printer-tab-btn active"><i class="fa-solid fa-bluetooth"></i> Bluetooth</button>
+                    <button class="printer-tab-btn"><i class="fa-solid fa-plug"></i> Kabel</button>
+                </div>
+
+                <p style="font-size:11px; color:#64748b; margin-bottom:12px;">
+                    ${isPrinterConnected ? 'Printer Bluetooth tersimpan dan siap digunakan' : 'Belum ada printer Bluetooth yang tersimpan'}
+                </p>
+
+                <div class="printer-status-row">
+                    <div class="status-box status-box-blue">
+                        Bluetooth<br><span style="font-size:10px; font-weight:normal;">Aktif</span>
+                    </div>
+                    <div class="status-box ${statusClass}">
+                        ${statusText}
+                    </div>
+                </div>
+
+                <div class="printer-actions-row">
+                    <button class="btn-scan-printer" onclick="alert('Memindai perangkat bluetooth...')">
+                        <i class="fa-solid fa-magnifying-glass"></i> Scan Device
+                    </button>
+                    <button class="${testBtnClass}" onclick="triggerTestPrintStatus()">
+                        <i class="fa-solid fa-print"></i> Test Print
+                    </button>
+                </div>
+
+                <p style="font-size:12px; font-weight:bold; color:#333; margin-bottom:8px;">Perangkat Terpasang</p>
+                <div class="printer-device-card" onclick="connectPrinterDevice('EPSON TM-P20_01')">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-bluetooth" style="color:#2563eb; font-size:16px;"></i>
+                        <div>
+                            <p style="font-size:12px; font-weight:bold; color:#1e293b;">EPSON TM-P20_01</p>
+                            <p style="font-size:10px; color:#64748b;">AB:0A:FC:74:0C:9B</p>
+                        </div>
+                    </div>
+                    ${isPrinterConnected ? '<span style="font-size:10px; background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:8px; font-weight:bold;">Terhubung</span>' : ''}
+                </div>
+            `;
+        }
+
+        function connectPrinterDevice(deviceName) {
+            isPrinterConnected = !isPrinterConnected;
+            alert(isPrinterConnected ? `Terhubung ke ${deviceName}` : `Koneksi ${deviceName} diputuskan`);
+            renderPrinterUI();
+        }
+
+        // --- TEST PRINT: LANGSUNG MUNCULKAN STATUS BERHASIL ---
+        function triggerTestPrintStatus() {
+            const body = document.getElementById("modalBody");
+
+            body.innerHTML = `
+                <div style="text-align: center; padding: 20px 10px;">
+                    <div style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 18px;"></i> Test print berhasil
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStatusUI() {
+            const elKandidat = document.getElementById("status-kandidat");
+            if (isKandidatDownloaded) {
+                elKandidat.className = "status-tag status-ready";
+                elKandidat.innerText = `2 Kandidat Tersedia`;
+            }
+
+            const elPemilih = document.getElementById("status-pemilih");
+            if (isPemilihSaved) {
+                elPemilih.className = "status-tag status-ready";
+                elPemilih.innerText = `Data Tersimpan`;
+            } else {
+                elPemilih.className = "status-tag status-empty";
+                elPemilih.innerText = `Belum Diunduh`;
+            }
+        }
+
+        // --- TAMPILAN DATA KANDIDAT & DATA PEMILIH ---
+        function viewData(type) {
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+
+            if (type === "kandidat") {
+                title.innerText = "Unduh Data Kandidat & Pemilih";
+                renderKandidatFlow();
+            } else if (type === "pemilih") {
+                title.innerText = "";
+                renderPemilihView();
+            }
+            modal.style.display = "flex";
+        }
+
+        function renderPemilihView() {
+            const body = document.getElementById("modalBody");
+
+            // 1. Jika data pemilih sudah pernah diklik download, tampilkan list DPT
+            if (isPemilihSaved) {
+                body.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <span style="font-size:12px; font-weight:bold; color:#1e293b;">Daftar Pemilih Tetap (DPT)</span>
+                        <button class="btn-action" style="padding:6px 12px; font-size:11px; background:#007aff;" onclick="triggerDownloadPemilihProcess()">
+                            <i class="fa-solid fa-rotate"></i> Unduh Ulang
+                        </button>
+                    </div>
+
+                    <div style="max-height:300px; overflow-y:auto;">
+                        <div class="voter-card">
+                            <p class="voter-nik">NIK: 9909046901920002</p>
+                            <p class="voter-nama">1. SITI AISYAH</p>
+                            <p class="voter-meta">NKK: 9999040606120010 | Tahun Lahir: 1992</p>
+                        </div>
+                        <div class="voter-card">
+                            <p class="voter-nik">NIK: 9909046106920008</p>
+                            <p class="voter-nama">2. SERLY YUNITA SARI</p>
+                            <p class="voter-meta">NKK: 9999041110120016 | Tahun Lahir: 1991</p>
+                        </div>
+                        <div class="voter-card">
+                            <p class="voter-nik">NIK: 9909046412920007</p>
+                            <p class="voter-nama">3. LINDA WATI</p>
+                            <p class="voter-meta">NKK: 9999041206120010 | Tahun Lahir: 1992</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 2. Jika Restore Data sudah diklik sebelumnya, langsung tampilkan tombol Download Data Pemilih
+            if (isRestored) {
+                body.innerHTML = `
+                    <div style="text-align:center; padding: 40px 10px;">
+                        <button class="btn-action" style="margin:0 auto; padding:12px 24px; font-size:13px; background:#007aff;" onclick="executeDownloadPemilih()">
+                            <i class="fa-solid fa-download"></i> Download Data Pemilih
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // 3. Jika belum restore, tampilkan opsi Backup & Restore
+            let exportBoxContent = `
+                <div class="export-location-title">
+                    <i class="fa-regular fa-folder"></i> Lokasi Export
+                </div>
+                <p class="export-location-sub">Belum ada lokasi export yang dipilih</p>
+                <button class="btn-pilih-lokasi-export" onclick="saveBackupDirectly()">
+                    <i class="fa-regular fa-folder"></i> Pilih Lokasi Export
+                </button>
+            `;
+
+            if (backupFileName !== "") {
+                exportBoxContent = `
+                    <div class="export-location-title" style="color:#007aff;">
+                        <i class="fa-solid fa-circle-check"></i> Lokasi Export Tersimpan
+                    </div>
+                    <p class="export-location-sub" style="font-style:normal; font-weight:bold; color:#1e293b;">${backupFileName}</p>
+                    <button class="btn-pilih-lokasi-export" style="background:#64748b;" onclick="saveBackupDirectly()">
+                        <i class="fa-solid fa-pen-to-square"></i> Ubah Lokasi
+                    </button>
+                `;
+            }
+
+            body.innerHTML = `
+                <div class="auth-method-box">
+                    <label class="radio-option">
+                        <input type="radio" name="authMethod" value="face"> Face Recognition
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="authMethod" value="fingerprint"> Fingerprint
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="authMethod" value="qr" checked> QR Code
+                    </label>
+                </div>
+
+                <h4 style="font-size:14px; font-weight:bold; color:#1e293b; margin-top:20px; margin-bottom:8px;">Backup & Restore</h4>
+                <div class="backup-tips-box">
+                    <div class="backup-tips-title"><i class="fa-solid fa-circle-info"></i> Tips:</div>
+                    <ul style="margin-left: 18px;">
+                        <li>Pilih lokasi di SD Card untuk backup otomatis</li>
+                        <li>File backup dapat dipindah ke device lain</li>
+                        <li>Restore akan mengganti semua data yang ada</li>
+                    </ul>
+                </div>
+
+                <div class="export-location-box">
+                    ${exportBoxContent}
+                </div>
+
+                <div style="text-align:center; color:#94a3b8; font-size:11px; margin: 12px 0;">atau</div>
+
+                <div class="restore-box" onclick="triggerRestoreAction()">
+                    <span><i class="fa-solid fa-rotate-left"></i> Restore Data</span>
+                    <span style="font-size:11px; color:#007aff; font-weight:600;"><i class="fa-solid fa-upload"></i> Pilih File Backup</span>
+                </div>
+            `;
+        }
+
+        async function saveBackupDirectly() {
+            const defaultFileName = "backup_ujungjaya_1_1.json";
+
+            const localVotes = JSON.parse(localStorage.getItem("local_votes") || "[]");
+            const systemConfig = JSON.parse(localStorage.getItem("system_config") || "{}");
+
+            const dataToExport = {
+                app: "VoteNow v2.1",
+                created_at: new Date().toISOString(),
+                config: systemConfig,
+                total_votes: localVotes.length,
+                votes: localVotes
+            };
+
+            const fileContent = JSON.stringify(dataToExport, null, 2);
+
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: defaultFileName,
+                        types: [{
+                            description: 'JSON Backup File',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+
+                    const writable = await handle.createWritable();
+                    await writable.write(fileContent);
+                    await writable.close();
+
+                    backupFileName = handle.name;
+                    alert(`Berhasil menyimpan path lokasi export:\n${handle.name}`);
+                    renderPemilihView();
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            backupFileName = defaultFileName;
+            alert(`Berhasil menyimpan path lokasi export:\n${defaultFileName}`);
+            renderPemilihView();
+        }
+
+        function triggerRestoreAction() {
+            if (backupFileName === "") {
+                alert("Silakan pilih Lokasi Export terlebih dahulu!");
+                return;
+            }
+
+            isRestored = true; 
+            alert("Data restore berhasil! Mengembalikan ke menu utama...");
+            closeModal(); 
+        }
+
+        function triggerDownloadPemilihProcess() {
+            const body = document.getElementById("modalBody");
+
+            body.innerHTML = `
+                <div style="text-align:center; padding: 40px 10px;">
+                    <button class="btn-action" style="margin:0 auto; padding:12px 24px; font-size:13px; background:#007aff;" onclick="executeDownloadPemilih()">
+                        <i class="fa-solid fa-download"></i> Download Data Pemilih
+                    </button>
+                </div>
+            `;
+        }
+
+        function executeDownloadPemilih() {
+            isPemilihSaved = true;
+            updateStatusUI();
+            alert("Data Pemilih berhasil diunduh!");
+            renderPemilihView();
+        }
+
+        // --- ALUR DATA KANDIDAT ---
+        function renderKandidatFlow() {
+            const body = document.getElementById("modalBody");
+
+            if (!isKandidatDownloaded) {
+                body.innerHTML = `
+                    <div style="text-align:center; padding: 40px 10px;">
+                        <button class="btn-action" onclick="clickDownloadKandidatAction()" style="margin:0 auto; padding:10px 20px; font-size:13px; background:#0284c7; border-radius:8px;">
+                            Download Data Kandidat
+                        </button>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div style="margin-top:10px;">
+                        <div class="candidate-list-item">
+                            <div class="candidate-thumb">${kandidatSVG[1]}</div>
+                            <div class="candidate-info-text">
+                                <p class="no-urut-label">No. Urut 1</p>
+                                <p class="nama-label">CALON 1</p>
+                            </div>
+                        </div>
+
+                        <div class="candidate-list-item">
+                            <div class="candidate-thumb">${kandidatSVG[2]}</div>
+                            <div class="candidate-info-text">
+                                <p class="no-urut-label">No. Urut 2</p>
+                                <p class="nama-label">CALON 2</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function clickDownloadKandidatAction() {
+            alert("Mengunduh Data Kandidat...");
+            isKandidatDownloaded = true;
+            updateStatusUI();
+            renderKandidatFlow();
+        }
+
+        // --- BUKA KAMERA SCANNER BARCODE ---
+        function openVotingBilik() {
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+            const body = document.getElementById("modalBody");
+
+            title.innerText = "Scan Barcode Pemilih";
+            body.innerHTML = `
+                <div class="scanner-container">
+                    <div id="qr-reader"></div>
+                </div>
+                <p style="text-align:center; font-size:11px; color:#64748b; margin-top:8px;">Arahkan Barcode ke depan Kamera...</p>
+            `;
+            modal.style.display = "flex";
+
+            setTimeout(() => {
+                startCameraScanner();
+            }, 300);
+        }
+
+        function startCameraScanner() {
+            if (html5QrCode) {
+                stopCameraScanner(() => initScannerInstance());
+            } else {
+                initScannerInstance();
+            }
+        }
+
+        function initScannerInstance() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.warn("Gagal membuka kamera:", err);
+                const qrEl = document.getElementById("qr-reader");
+                if(qrEl) {
+                    qrEl.innerHTML = `
+                        <div style="padding:20px; text-align:center;">
+                            <p style="color:#ef4444; font-size:11px; margin-bottom:10px;">Kamera tidak diizinkan atau tidak ditemukan.</p>
+                            <button class="btn-action" onclick="showCandidateSelection('Barcode Test')" style="margin:0 auto;">Simulasi Tanpa Kamera</button>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function stopCameraScanner(callback) {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    html5QrCode = null;
+                    if (callback) callback();
+                }).catch(err => {
+                    console.error("Gagal stop kamera:", err);
+                    html5QrCode = null;
+                    if (callback) callback();
+                });
+            } else {
+                html5QrCode = null;
+                if (callback) callback();
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            stopCameraScanner(() => {
+                showCandidateSelection(decodedText);
+            });
+        }
+
+        function onScanFailure(error) {}
+
+        // --- TAMPILAN BILIK SUARA ---
+        function showCandidateSelection(barcodeResult) {
+            activeBarcode = barcodeResult || "Barcode Test";
+            let kandidatList = [
+                { no_urut: 1, nama: "Calon 1" },
+                { no_urut: 2, nama: "Calon 2" }
+            ];
+
+            const title = document.getElementById("modalTitle");
+            const body = document.getElementById("modalBody");
+
+            title.innerText = "Bilik Suara - Pilih Calon";
+            let html = `
+                <div style="background:#e0f2fe; padding:6px 10px; border-radius:8px; margin-bottom:12px; text-align:center;">
+                    <p style="font-size:11px; color:#0369a1;">Barcode: <strong>${activeBarcode}</strong></p>
+                </div>
+                <div class="candidate-side-grid">
+            `;
+
+            kandidatList.forEach((k) => {
+                const namaCalon = k.nama || `Calon ${k.no_urut}`;
+                const svgCode = kandidatSVG[k.no_urut] || kandidatSVG[1];
+                html += `
+                    <div class="candidate-card-box">
+                        <span class="number-badge-large">No. Urut ${k.no_urut}</span>
+                        <div class="candidate-photo-wrapper">
+                            ${svgCode}
+                        </div>
+                        <button class="btn-action" style="background:#16a34a; width:100%; justify-content:center; padding:8px; font-size:12px;" onclick="confirmChoice(${k.no_urut}, '${namaCalon}')">
+                            Pilih
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            body.innerHTML = html;
+        }
+
+        // --- TAMPILAN KONFIRMASI (VERIFIKASI 2 LANGKAH) ---
+        function confirmChoice(noUrut, nama) {
+            const title = document.getElementById("modalTitle");
+            const body = document.getElementById("modalBody");
+            const svgCode = kandidatSVG[noUrut] || kandidatSVG[1];
+
+            title.innerText = "Konfirmasi Pilihan";
+            body.innerHTML = `
+                <div style="text-align:center; padding:5px;">
+                    <p style="font-size:13px; color:#475569; margin-bottom:10px;">Anda Memilih:</p>
+                    <span class="number-badge-large" style="font-size:14px; padding:4px 14px;">Nomor Urut ${noUrut}</span>
+                    <div style="margin:12px auto; width:130px; height:160px;" class="candidate-photo-wrapper">
+                        ${svgCode}
+                    </div>
+                    
+                    <p style="font-size:12px; color:#64748b; margin-bottom:16px;">Yakin dengan pilihan ini?</p>
+
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button class="btn-action" style="background:#ef4444; flex:1; justify-content:center; padding:10px; font-size:12px;" onclick="showCandidateSelection('${activeBarcode}')">
+                            <i class="fa-solid fa-rotate-left"></i> Ulangi
+                        </button>
+                        <button class="btn-action" style="background:#16a34a; flex:1; justify-content:center; padding:10px; font-size:12px;" onclick="submitVote('${nama}')">
+                            <i class="fa-solid fa-circle-check"></i> Lanjutkan
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- SUBMIT SUARA & OTOMATIS KEMBALI KE KAMERA SCANNER ---
+        async function submitVote(kandidatNama) {
+            const timeNow = new Date().toISOString();
+            const fakeNik = "3216" + Math.floor(1000000000 + Math.random() * 9000000000);
+
+            let localVotes = JSON.parse(localStorage.getItem("local_votes") || "[]");
+            localVotes.push({ nik: fakeNik, kandidat: kandidatNama, timestamp: timeNow });
+            localStorage.setItem("local_votes", JSON.stringify(localVotes));
+
+            alert("Pilihan suara berhasil disimpan!");
+
+            // OTOMATIS KEMBALI BUKA KAMERA DENGAN SEGERA
+            openVotingBilik();
+        }
+
+        // --- MENU CETAK ULANG (HANYA STATUS BERHASIL SAJA) ---
+        function openCetakUlang() {
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+            const body = document.getElementById("modalBody");
+
+            title.innerText = "Cetak Ulang Resi Suara";
+            body.innerHTML = `
+                <div style="text-align: center; padding: 20px 10px;">
+                    <div style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 18px;"></i> Cetak ulang resi berhasil
+                    </div>
+                </div>
+            `;
+            modal.style.display = "flex";
+        }
+
+        function openRekapData() {
+            const localVotesData = localStorage.getItem("local_votes");
+            const config = JSON.parse(localStorage.getItem("system_config") || '{"desa":"Ujungjaya","kecamatan":"Ujungjaya","tps":"5"}');
+
+            const kandidatList = [
+                { no_urut: 1, nama: "Calon 1" },
+                { no_urut: 2, nama: "Calon 2" }
+            ];
+
+            const votesList = JSON.parse(localVotesData || "[]");
+            const totalSuaraMasuk = votesList.length;
+
+            const countMap = {};
+            kandidatList.forEach(k => countMap[k.nama] = 0);
+            votesList.forEach(v => {
+                if (countMap[v.kandidat] !== undefined) countMap[v.kandidat]++;
+            });
+
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+            const body = document.getElementById("modalBody");
+
+            title.innerText = "";
+
+            let html = `
+                <div class="print-header">
+                    <h2>BERITA ACARA PENGHITUNGAN SUARA</h2>
+                    <p style="font-size:12px; margin-top:4px;">PILKADES ${config.desa}</p>
+                    <p style="font-size:11px;">KEC. ${config.kecamatan} - TPS NO. ${config.tps}</p>
+                </div>
+
+                <div style="margin-bottom:12px; font-size:12px;">
+                    <p>Total Suara Masuk: <strong>${totalSuaraMasuk} Suara</strong></p>
+                </div>
+
+                <h4 style="margin-top:10px; font-size:13px;">Rincian Perolehan Suara:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:10%; text-align:center;">No</th>
+                            <th>Calon</th>
+                            <th style="width:25%; text-align:center;">Suara</th>
+                            <th style="width:20%; text-align:center;">%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            kandidatList.forEach(k => {
+                const namaCalon = k.nama;
+                const total = countMap[namaCalon] || 0;
+                const percent = totalSuaraMasuk > 0 ? ((total / totalSuaraMasuk) * 100).toFixed(1) : 0;
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${k.no_urut}</td>
+                        <td><strong>${namaCalon}</strong></td>
+                        <td style="text-align:center;"><strong>${total}</strong></td>
+                        <td style="text-align:center;">${percent}%</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+
+                <div class="signature-section">
+                    <div class="signature-box"><p>Saksi 1</p><br><br><p>( ............ )</p></div>
+                    <div class="signature-box"><p>Saksi 2</p><br><br><p>( ............ )</p></div>
+                    <div class="signature-box"><p>Ketua KPPS</p><br><br><p>( ............ )</p></div>
+                </div>
+
+                <div class="no-print" style="margin-top:20px; text-align:center;">
+                    <button class="btn-action" onclick="window.print()" style="width:100%; justify-content:center; padding:12px; font-size:13px; background:#9333ea;">
+                        <i class="fa-solid fa-print"></i> Print Berita Acara
+                    </button>
+                </div>
+            `;
+
+            body.innerHTML = html;
+            modal.style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("dataModal").style.display = "none";
+            document.getElementById("modalBody").innerHTML = "";
+            stopCameraScanner();
+        }
+    </script>
+</body>
+</html>
