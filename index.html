@@ -904,7 +904,17 @@
 
         function initScannerInstance() {
             html5QrCode = new Html5Qrcode("qr-reader");
-            const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+            
+            // Buat qrbox dinamis menyesuaikan lebar container saat ini (aman untuk portrait maupun landscape)
+            const containerEl = document.querySelector(".scanner-container");
+            const boxWidth = containerEl ? Math.min(containerEl.clientWidth - 40, 280) : 250;
+            const boxHeight = window.innerHeight > window.innerWidth ? 160 : 120; // Lebih ringkas saat landscape
+
+            const config = { 
+                fps: 20, 
+                qrbox: { width: boxWidth, height: boxHeight },
+                aspectRatio: 1.777778 // Rasio standar kamera agar tidak distorsi saat rotate
+            };
 
             html5QrCode.start(
                 { facingMode: "environment" },
@@ -924,6 +934,18 @@
                 }
             });
         }
+
+        // Tambahan Event Listener untuk mendeteksi saat HP diputar (Rotate/Orientation Change)
+        window.addEventListener("orientationchange", function() {
+            setTimeout(() => {
+                const modal = document.getElementById("dataModal");
+                if (modal && modal.style.display === "flex" && html5QrCode) {
+                    stopCameraScanner(() => {
+                        startCameraScanner();
+                    });
+                }
+            }, 400);
+        });
 
         function stopCameraScanner(callback) {
             if (html5QrCode && html5QrCode.isScanning) {
