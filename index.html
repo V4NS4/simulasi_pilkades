@@ -382,6 +382,7 @@
                     <div class="card-content">
                         <h3>Setting</h3>
                         <p>Konfigurasi aplikasi dan sistem</p>
+                        
                     </div>
                 </div>
             </div>
@@ -406,6 +407,10 @@
         let isPemilihSaved = false;
         let backupFileName = "";
         let isRestored = false; 
+
+        // State khusus untuk Settings Backup & Restore
+        let settingsBackupFileName = "";
+        
 
         let savedPinCode = localStorage.getItem("kpps_pin_code") || "";
         let pendingMenuAction = null;
@@ -511,8 +516,6 @@
 
         function movePinFocus(currentInput, index) {
             const boxes = document.querySelectorAll("#setupPinScreen .pin-box");
-            
-            // Jika ada angka diisi, pindah ke kotak berikutnya
             if (currentInput.value.length >= 1 && index < 6) {
                 if (boxes[index]) boxes[index].focus();
             }
@@ -520,8 +523,6 @@
 
         function moveModalPinFocus(currentInput, index) {
             const boxes = document.querySelectorAll(".modal-pin");
-            
-            // Jika ada angka diisi, pindah ke kotak berikutnya
             if (currentInput.value.length >= 1 && index < 6) {
                 if (boxes[index]) boxes[index].focus();
             }
@@ -530,8 +531,6 @@
         document.addEventListener("keydown", function(e) {
             if (e.key === "Backspace" && e.target.classList.contains("pin-box")) {
                 const currentBox = e.target;
-                
-                // Jika kotak saat ini kosong, pindah dan hapus isi kotak sebelumnya
                 if (currentBox.value === "") {
                     const isModalPin = currentBox.classList.contains("modal-pin");
                     const selector = isModalPin ? ".modal-pin" : "#setupPinScreen .pin-box";
@@ -572,17 +571,104 @@
             if (config.device) document.getElementById("lbl-device").innerText = config.device;
         }
 
-        function saveSettings() {
-            const newConfig = {
-                kecamatan: document.getElementById("cfg-kecamatan").value,
-                desa: document.getElementById("cfg-desa").value,
-                tps: document.getElementById("cfg-tps").value,
-                bilik: document.getElementById("cfg-bilik").value,
-                device: document.getElementById("cfg-device").value
+        // --- MENU SETTINGS (ALUR MIRIP DATA PEMILIH TANPA FACE, FINGERPRINT, QR) ---
+        function openSettings() {
+            const modal = document.getElementById("dataModal");
+            const title = document.getElementById("modalTitle");
+            title.innerText = "";
+            renderSettingsView();
+            modal.style.display = "flex";
+        }
+
+        function renderSettingsView() {
+            const body = document.getElementById("modalBody");
+
+            let exportBoxContent = `
+                <div class="export-location-title">
+                    <i class="fa-regular fa-folder"></i> Lokasi Export Setting
+                </div>
+                <p class="export-location-sub">Belum ada lokasi export setting yang dipilih</p>
+                <button class="btn-pilih-lokasi-export" onclick="saveSettingsBackupDirectly()">
+                    <i class="fa-regular fa-folder"></i> Pilih Lokasi Export Setting
+                </button>
+            `;
+
+            if (settingsBackupFileName !== "") {
+                exportBoxContent = `
+                    <div class="export-location-title" style="color:#007aff;">
+                        <i class="fa-solid fa-circle-check"></i> Lokasi Export Setting Tersimpan
+                    </div>
+                    <p class="export-location-sub" style="font-style:normal; font-weight:bold; color:#1e293b;">${settingsBackupFileName}</p>
+                    <button class="btn-pilih-lokasi-export" style="background:#64748b;" onclick="saveSettingsBackupDirectly()">
+                        <i class="fa-solid fa-pen-to-square"></i> Ubah Lokasi
+                    </button>
+                `;
+            }
+
+            body.innerHTML = `
+                <h4 style="font-size:14px; font-weight:bold; color:#1e293b; margin-bottom:8px;">Backup & Restore Konfigurasi Sistem</h4>
+
+                <div class="export-location-box">
+                    ${exportBoxContent}
+                </div>
+
+                <div style="text-align:center; color:#94a3b8; font-size:11px; margin: 12px 0;">atau</div>
+
+                <div class="restore-box" onclick="triggerSettingsRestoreAction()">
+                    <span><i class="fa-solid fa-rotate-left"></i> Restore Setting</span>
+                    <span style="font-size:11px; color:#007aff; font-weight:600;"><i class="fa-solid fa-upload"></i> Pilih File Backup Setting</span>
+                </div>
+            `;
+        }
+
+        async function saveSettingsBackupDirectly() {
+            const systemConfig = JSON.parse(localStorage.getItem("system_config") || '{"kecamatan":"Ujungjaya","desa":"Ujungjaya","tps":"5","bilik":"1","device":"ba77ed0749c1b4b5"}');
+            const randCodeSet = Math.floor(100000 + Math.random() * 900000);
+            const defaultFileName = `backup_${randCodeSet}_1.json`;
+
+            const dataToExport = {
+                app: "VoteNow v2.1 Config",
+                created_at: new Date().toISOString(),
+                config: systemConfig
             };
-            localStorage.setItem("system_config", JSON.stringify(newConfig));
-            loadSystemSettings();
-            alert("Pengaturan berhasil disimpan!");
+
+            const fileContent = JSON.stringify(dataToExport, null, 2);
+
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: defaultFileName,
+                        types: [{
+                            description: 'JSON Config File',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+
+                    const writable = await handle.createWritable();
+                    await writable.write(fileContent);
+                    await writable.close();
+
+                    settingsBackupFileName = handle.name;
+                    alert(`Berhasil menyimpan path lokasi export setting:\n${handle.name}`);
+                    renderSettingsView();
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            settingsBackupFileName = defaultFileName;
+            alert(`Berhasil menyimpan path lokasi export setting:\n${defaultFileName}`);
+            renderSettingsView();
+        }
+
+        function triggerSettingsRestoreAction() {
+            if (settingsBackupFileName === "") {
+                alert("Silakan pilih Lokasi Export Setting terlebih dahulu!");
+                return;
+            }
+
+            alert("Restore setting berhasil!");
             closeModal();
         }
 
@@ -678,6 +764,8 @@
                 elPemilih.className = "status-tag status-empty";
                 elPemilih.innerText = `Belum Diunduh`;
             }
+
+
         }
 
         // --- TAMPILAN DATA KANDIDAT & DATA PEMILIH ---
@@ -698,7 +786,6 @@
         function renderPemilihView() {
             const body = document.getElementById("modalBody");
 
-            // 1. Jika data pemilih sudah pernah diklik download, tampilkan list DPT
             if (isPemilihSaved) {
                 body.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -729,7 +816,6 @@
                 return;
             }
 
-            // 2. Jika Restore Data sudah diklik sebelumnya, langsung tampilkan tombol Download Data Pemilih
             if (isRestored) {
                 body.innerHTML = `
                     <div style="text-align:center; padding: 40px 10px;">
@@ -741,7 +827,6 @@
                 return;
             }
 
-            // 3. Jika belum restore, tampilkan opsi Backup & Restore
             let exportBoxContent = `
                 <div class="export-location-title">
                     <i class="fa-regular fa-folder"></i> Lokasi Export
@@ -778,14 +863,6 @@
                 </div>
 
                 <h4 style="font-size:14px; font-weight:bold; color:#1e293b; margin-top:20px; margin-bottom:8px;">Backup & Restore</h4>
-                <div class="backup-tips-box">
-                    <div class="backup-tips-title"><i class="fa-solid fa-circle-info"></i> Tips:</div>
-                    <ul style="margin-left: 18px;">
-                        <li>Pilih lokasi di SD Card untuk backup otomatis</li>
-                        <li>File backup dapat dipindah ke device lain</li>
-                        <li>Restore akan mengganti semua data yang ada</li>
-                    </ul>
-                </div>
 
                 <div class="export-location-box">
                     ${exportBoxContent}
@@ -801,8 +878,8 @@
         }
 
         async function saveBackupDirectly() {
-            const defaultFileName = "backup_ujungjaya_1_1.json";
-
+            const randCode = Math.floor(100000 + Math.random() * 900000);
+            const defaultFileName = `backup_${randCode}_1.json`;
             const localVotes = JSON.parse(localStorage.getItem("local_votes") || "[]");
             const systemConfig = JSON.parse(localStorage.getItem("system_config") || "{}");
 
@@ -857,7 +934,6 @@
 
         function triggerDownloadPemilihProcess() {
             const body = document.getElementById("modalBody");
-
             body.innerHTML = `
                 <div style="text-align:center; padding: 40px 10px;">
                     <button class="btn-action" style="margin:0 auto; padding:12px 24px; font-size:13px; background:#007aff;" onclick="executeDownloadPemilih()">
@@ -947,7 +1023,6 @@
         function initScannerInstance() {
             html5QrCode = new Html5Qrcode("qr-reader");
 
-            // Konfigurasi TANPA qrbox agar kamera tampil full tanpa garis/kotak putih
             const config = { 
                 fps: 20,
                 aspectRatio: 1.777778
@@ -972,7 +1047,6 @@
             });
         }
 
-        // Tambahan Event Listener untuk mendeteksi saat HP diputar (Rotate/Orientation Change)
         window.addEventListener("orientationchange", function() {
             setTimeout(() => {
                 const modal = document.getElementById("dataModal");
@@ -1048,7 +1122,6 @@
             body.innerHTML = html;
         }
 
-        // --- TAMPILAN KONFIRMASI (VERIFIKASI 2 LANGKAH) ---
         function confirmChoice(noUrut, nama) {
             const title = document.getElementById("modalTitle");
             const body = document.getElementById("modalBody");
@@ -1077,7 +1150,6 @@
             `;
         }
 
-        // --- SUBMIT SUARA & OTOMATIS KEMBALI KE KAMERA SCANNER ---
         async function submitVote(kandidatNama) {
             const timeNow = new Date().toISOString();
             const fakeNik = "3216" + Math.floor(1000000000 + Math.random() * 9000000000);
@@ -1087,12 +1159,9 @@
             localStorage.setItem("local_votes", JSON.stringify(localVotes));
 
             alert("Pilihan suara berhasil disimpan!");
-
-            // OTOMATIS KEMBALI BUKA KAMERA DENGAN SEGERA
             openVotingBilik();
         }
 
-        // --- MENU CETAK ULANG (HANYA STATUS BERHASIL SAJA) ---
         function openCetakUlang() {
             const modal = document.getElementById("dataModal");
             const title = document.getElementById("modalTitle");
@@ -1100,13 +1169,30 @@
 
             title.innerText = "Cetak Ulang Resi Suara";
             body.innerHTML = `
+                <div style="padding: 10px;">
+                    <p style="font-size:12px; color:#64748b; margin-bottom:12px;">Pilih data pemilih untuk mencetak ulang resi:</p>
+                    <div class="voter-card" style="margin-bottom:15px;">
+                        <p class="voter-nik">NIK: 9909046901920002</p>
+                        <p class="voter-nama">SITI AISYAH</p>
+                        <p class="voter-meta">Pilihan: Calon 1 | Waktu: Terbaru</p>
+                    </div>
+                    <button class="btn-action" style="width:100%; justify-content:center; padding:12px; background:#007aff;" onclick="executeCetakUlangResi()">
+                        <i class="fa-solid fa-print"></i> Cetak Ulang Resi
+                    </button>
+                </div>
+            `;
+            modal.style.display = "flex";
+        }
+
+        function executeCetakUlangResi() {
+            const body = document.getElementById("modalBody");
+            body.innerHTML = `
                 <div style="text-align: center; padding: 20px 10px;">
                     <div style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fa-solid fa-circle-check" style="font-size: 18px;"></i> Cetak ulang resi berhasil
                     </div>
                 </div>
             `;
-            modal.style.display = "flex";
         }
 
         function openRekapData() {
